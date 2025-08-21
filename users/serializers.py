@@ -5,14 +5,14 @@ from django.contrib.auth import get_user_model
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
 
+User = get_user_model()
+
 
 class CustomUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
-        fields = "__all__"
-
-
-User = get_user_model()
+        fields = ["id", "username", "first_name", "last_name", "is_superuser", "is_staff", "is_active",
+                  "date_joined", "email", "phone", "role", "image",]
 
 
 class ResetPasswordSerializer(serializers.Serializer):

@@ -22,3 +22,28 @@ class Advertisement(models.Model):
 
     def __str__(self):
         return f"{self.title} ({self.price}₽)"
+
+
+class Comment(models.Model):
+    text = models.TextField(verbose_name="Комментарий")
+    author = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="comments",
+        verbose_name="Автор комментария"
+    )
+    advertisement = models.ForeignKey(
+        Advertisement,
+        on_delete=models.CASCADE,
+        related_name="comments",
+        verbose_name="Объявление"
+    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Комментарий"
+        verbose_name_plural = "Комментарии"
+
+    def __str__(self):
+        return f"Комментарий {self.text} от {self.author} к {self.advertisement}"
