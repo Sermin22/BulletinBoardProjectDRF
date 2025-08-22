@@ -43,22 +43,22 @@ class CommentCreateView(generics.CreateAPIView):
     serializer_class = CommentSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    # def perform_create(self, serializer):
-    #     advertisement_id = self.kwargs.get("advertisement_id")
-    #     if advertisement_id:
-    #         serializer.save(author=self.request.user, advertisement_id=advertisement_id)
-    #     else:
-    #         serializer.save(author=self.request.user)
-
     def perform_create(self, serializer):
-        advertisement_id = self.request.data.get("advertisement")
-        if not advertisement_id:
-            raise ValidationError({"advertisement": "Это поле обязательно."})
-        try:
-            advertisement = Advertisement.objects.get(pk=advertisement_id)
-        except Advertisement.DoesNotExist:
-            raise ValidationError({"advertisement": "Объявление не найдено."})
-        serializer.save(author=self.request.user, advertisement=advertisement)
+        # пробуем достать из URL
+        advertisement_id = self.kwargs.get("advertisement_id")
+        if advertisement_id:
+            # если путь вложенный — сохраняем с ним
+            serializer.save(author=self.request.user, advertisement_id=advertisement_id)
+        else:
+            # иначе — берём из request.data (сериализатор проверит валидность)
+            advertisement_id = self.request.data.get("advertisement")
+            if not advertisement_id:
+                raise ValidationError({"advertisement": "Это поле обязательно."})
+            try:
+                advertisement = Advertisement.objects.get(pk=advertisement_id)
+            except Advertisement.DoesNotExist:
+                raise ValidationError({"advertisement": "Объявление не найдено."})
+            serializer.save(author=self.request.user, advertisement=advertisement)
 
 
 class CommentListView(generics.ListAPIView):
@@ -66,10 +66,11 @@ class CommentListView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        advertisement_id = self.kwargs.get("advertisement_id")
+        advertisement_id = self.kwargs.get("advertisement_id")  # или строго self.kwargs["advertisement_id"]
         if advertisement_id:
             # получаем список комментариев для конкретного объявления
             return Comment.objects.filter(advertisement_id=advertisement_id)
+        # получаем все комментарии с ID объявлений
         return Comment.objects.all()
 
 

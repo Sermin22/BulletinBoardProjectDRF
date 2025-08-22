@@ -5,7 +5,11 @@ from users.serializers import CustomUserSerializer
 
 class CommentSerializer(serializers.ModelSerializer):
     author = CustomUserSerializer(read_only=True)
-    # advertisement = serializers.PrimaryKeyRelatedField(queryset=Advertisement.objects.all())
+    # при создании можно указать id объявления, если путь общий (/comments/create/)
+    advertisement = serializers.PrimaryKeyRelatedField(
+        queryset=Advertisement.objects.all(),
+        required=False  # делаем необязательным, т.к. можем взять из URL
+    )
 
     class Meta:
         model = Comment
