@@ -1,8 +1,11 @@
 from rest_framework import generics, permissions
 from ads.models import Advertisement, Comment
+from ads.paginators import AdvertisementPagination
 from ads.serializers import AdvertisementSerializer, CommentSerializer
 from ads.permissions import IsAuthorOrAdmin
 from rest_framework.exceptions import ValidationError
+from rest_framework.filters import OrderingFilter, SearchFilter
+from django_filters.rest_framework import DjangoFilterBackend
 
 
 class AdvertisementCreateView(generics.CreateAPIView):
@@ -18,6 +21,11 @@ class AdvertisementListView(generics.ListAPIView):
     queryset = Advertisement.objects.all()
     serializer_class = AdvertisementSerializer
     # permission_classes = [permissions.AllowAny]  # если в settings IsAuthenticated, список доступен всем
+    pagination_class = AdvertisementPagination
+    filter_backends = [DjangoFilterBackend, OrderingFilter, SearchFilter]
+    filterset_fields = ("title",)
+    ordering_fields = ("price", "created_at")
+    search_fields = ("title",)
 
 
 class AdvertisementDetailView(generics.RetrieveAPIView):
