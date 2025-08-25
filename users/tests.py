@@ -6,7 +6,7 @@ from django.contrib.auth.tokens import default_token_generator
 from rest_framework import status
 from rest_framework.test import APITestCase
 from django.urls import reverse
-from users.models import CustomUser
+
 
 User = get_user_model()
 
