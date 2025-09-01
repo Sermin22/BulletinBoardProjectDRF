@@ -1,0 +1,100 @@
+from rest_framework import generics, permissions
+from ads.models import Advertisement, Comment
+from ads.paginators import AdvertisementPagination
+from ads.serializers import AdvertisementSerializer, CommentSerializer
+from ads.permissions import IsAuthorOrAdmin
+from rest_framework.exceptions import ValidationError
+from rest_framework.filters import OrderingFilter, SearchFilter
+from django_filters.rest_framework import DjangoFilterBackend
+
+
+class AdvertisementCreateView(generics.CreateAPIView):
+    queryset = Advertisement.objects.all()
+    serializer_class = AdvertisementSerializer
+    permission_classes = [permissions.IsAuthenticated]  # Создавать могут только аутентифицированные пользователи
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
+
+
+class AdvertisementListView(generics.ListAPIView):
+    queryset = Advertisement.objects.all()
+    serializer_class = AdvertisementSerializer
+    # permission_classes = [permissions.AllowAny]  # если в settings IsAuthenticated, список доступен всем
+    pagination_class = AdvertisementPagination
+    filter_backends = [DjangoFilterBackend, OrderingFilter, SearchFilter]
+    filterset_fields = ("title",)
+    ordering_fields = ("price", "created_at")
+    search_fields = ("title",)
+
+
+class AdvertisementDetailView(generics.RetrieveAPIView):
+    queryset = Advertisement.objects.all()
+    serializer_class = AdvertisementSerializer
+    permission_classes = [permissions.IsAuthenticated]  # Просмотр только аутентифицированным пользователям
+
+
+class AdvertisementUpdateView(generics.UpdateAPIView):
+    queryset = Advertisement.objects.all()
+    serializer_class = AdvertisementSerializer
+    permission_classes = [IsAuthorOrAdmin]  # Админ может изменять все, пользователь только свои
+
+
+class AdvertisementDeleteView(generics.DestroyAPIView):
+    queryset = Advertisement.objects.all()
+    serializer_class = AdvertisementSerializer
+    permission_classes = [IsAuthorOrAdmin]  # Админ может удалять все, пользователь только свои
+
+
+class CommentCreateView(generics.CreateAPIView):
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def perform_create(self, serializer):
+        # пробуем достать из URL
+        advertisement_id = self.kwargs.get("advertisement_id")
+        if advertisement_id:
+            # если путь вложенный — сохраняем с ним
+            serializer.save(author=self.request.user, advertisement_id=advertisement_id)
+        else:
+            # иначе — берём из request.data (сериализатор проверит валидность)
+            advertisement_id = self.request.data.get("advertisement")
+            if not advertisement_id:
+                raise ValidationError({"advertisement": "Это поле обязательно."})
+            try:
+                advertisement = Advertisement.objects.get(pk=advertisement_id)
+            except Advertisement.DoesNotExist:
+                raise ValidationError({"advertisement": "Объявление не найдено."})
+            serializer.save(author=self.request.user, advertisement=advertisement)
+
+
+class CommentListView(generics.ListAPIView):
+    serializer_class = CommentSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        advertisement_id = self.kwargs.get("advertisement_id")  # или строго self.kwargs["advertisement_id"]
+        if advertisement_id:
+            # получаем список комментариев для конкретного объявления
+            return Comment.objects.filter(advertisement_id=advertisement_id)
+        # получаем все комментарии с ID объявлений
+        return Comment.objects.all()
+
+
+class CommentDetailView(generics.RetrieveAPIView):
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+
+class CommentUpdateView(generics.UpdateAPIView):
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer
+    permission_classes = [IsAuthorOrAdmin]
+
+
+class CommentDeleteView(generics.DestroyAPIView):
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer
+    permission_classes = [IsAuthorOrAdmin]
