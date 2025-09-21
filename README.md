@@ -101,7 +101,7 @@ git checkout feature/graduate_work
 ### 3. Установить зависимости:
 
 ```
-pip install requirements.txt
+pip install -r requirements.txt
 ```
 ### 4. Создать базу данных.
 
